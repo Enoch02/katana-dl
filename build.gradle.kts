@@ -11,6 +11,9 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+
+    implementation("it.skrape:skrapeit:1.2.2")
+    implementation("it.skrape:skrapeit-browser-fetcher:1.1.5")
 }
 
 tasks.test {
