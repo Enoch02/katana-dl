@@ -17,16 +17,17 @@ import java.util.zip.ZipOutputStream
 val HEADERS =
     mapOf("User-Agent" to "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
 
+//TODO: implement a frontend for this (with kobweb) that allows one to input a URL and download manga
 fun main() {
     //TODO: validate the link to check if it is from mangakatana
     println("Enter the link to a manga to continue: ")
-    val chapterURL = readlnOrNull()
+    val mangaURL = readlnOrNull()
 
-    if (chapterURL == null) {
+    if (mangaURL == null) {
         println("Invalid Input. exiting...")
     } else {
         println("Starting...")
-        val mangaData = getMangaData(chapterURL)
+        val mangaData = getMangaData(mangaURL)
 
         println("Recent Chapters:")
         mangaData.chapters.entries.take(5).forEach { (name, url) ->
@@ -38,11 +39,11 @@ fun main() {
 
 data class MangaData(val title: String, val chapters: Map<String, String>)
 
-fun getMangaData(chapterURL: String): MangaData {
+fun getMangaData(mangaURL: String): MangaData {
     var mangaTitle = ""
     val chapters = skrape(BrowserFetcher) {
         request {
-            url = chapterURL
+            url = mangaURL
             headers = HEADERS
         }
 
