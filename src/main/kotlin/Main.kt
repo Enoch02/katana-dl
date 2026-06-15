@@ -33,7 +33,7 @@ fun main() {
         mangaData.chapters.entries.take(5).forEach { (name, url) ->
             println("$name -> $url")
         }
-        runBlocking { downloadChapters(mangaData.title, mangaData.chapters.values.toList()) }
+        runBlocking { downloadChapters(mangaData.title, mangaData.chapters) }
     }
 }
 
@@ -72,7 +72,7 @@ fun getMangaData(mangaURL: String): MangaData {
 
 suspend fun downloadChapters(
     title: String,
-    chaptersURLs: List<String>,
+    chapters: Map<String, String>,
     destination: String = "${System.getProperty("user.home")}/Downloads/Manga"
 ) {
     val safeTitle = title
@@ -83,9 +83,8 @@ suspend fun downloadChapters(
         mangaFolder.mkdirs()
     }
 
-    chaptersURLs.forEachIndexed { i, chapterURL ->
+    chapters.forEach { (name, chapterURL) ->
         val pageURLs = mutableListOf<String>()
-        var chapterName = ""
 
         skrape(BrowserFetcher) {
             request {
@@ -99,8 +98,6 @@ suspend fun downloadChapters(
                         withId = "imgs"
 
                         findFirst {
-                            chapterName = attribute("data-alt")
-
                             img {
                                 findAll {
                                     forEach {
@@ -116,18 +113,13 @@ suspend fun downloadChapters(
             }
         }
 
-        // Fallback name
-        if (chapterName.isBlank()) {
-            chapterName = "Chapter ${chaptersURLs.size - i}"
-        }
-
-        println("Downloading $chapterName")
-        downloadChapter(chapterName, pageURLs, mangaFolder)
+        println("Downloading $name")
+        downloadChapterCBZ(name, pageURLs, mangaFolder)
         delay(1000)
     }
 }
 
-fun downloadChapter(chapterName: String, pageURLs: List<String>, outputFolder: File) {
+fun downloadChapterCBZ(chapterName: String, pageURLs: List<String>, outputFolder: File) {
     val safeName = chapterName
         .replace(Regex("""[^\w\- ]"""), "")
         .replace(" ", "_")
