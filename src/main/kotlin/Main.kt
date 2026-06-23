@@ -19,12 +19,13 @@ val HEADERS =
 
 //TODO: implement a frontend for this (with kobweb) that allows one to input a URL and download manga
 fun main() {
-    //TODO: validate the link to check if it is from mangakatana
     println("Enter the link to a manga to continue: ")
     val mangaURL = readlnOrNull()
 
     if (mangaURL == null) {
-        println("Invalid Input. exiting...")
+        println("Invalid Input. Exiting...")
+    } else if (!mangaURL.contains("https://mangakatana.com")) {
+        println("Invalid URL.\nA valid URL should contain at least `https://mangakatana.com`.\nExiting...")
     } else {
         println("Starting...")
         val mangaData = getMangaData(mangaURL)
