@@ -29,12 +29,63 @@ fun main() {
     } else {
         println("Starting...")
         val mangaData = getMangaData(mangaURL)
+        val chapterList = mangaData.chapters.toList()
 
-        println("Recent Chapters:")
-        mangaData.chapters.entries.take(5).forEach { (name, url) ->
-            println("$name -> $url")
+        if (chapterList.isEmpty()) {
+            println("No chapters found. Exiting...")
+            return
         }
-        runBlocking { downloadChapters(mangaData.title, mangaData.chapters) }
+
+        val totalChapters = chapterList.size
+        println("\nFound $totalChapters chapters.")
+
+        if (totalChapters <= 10) {
+            chapterList.forEachIndexed { index, (name, _) ->
+                println("[${index + 1}] $name")
+            }
+        } else {
+            println("\nNewest Chapters:")
+            chapterList.take(5).forEachIndexed { index, (name, _) ->
+                println("[${index + 1}] $name")
+            }
+            println("...")
+            println("Oldest Chapters:")
+            chapterList.takeLast(5).forEachIndexed { index, (name, _) ->
+                val actualIndex = totalChapters - 5 + index
+                println("[${actualIndex + 1}] $name")
+            }
+
+            print("\nDo you want to see all chapters? (y/N): ")
+            val showAll = readlnOrNull()?.trim()?.lowercase() ?: ""
+            if (showAll == "y" || showAll == "yes") {
+                println("\nAll Chapters:")
+                chapterList.forEachIndexed { index, (name, _) ->
+                    println("[${index + 1}] $name")
+                }
+            }
+        }
+
+        while (true) {
+            println("\nEnter chapter indices/ranges to download (e.g., '1-5, 8, 12-15' or 'all'): ")
+            val choiceInput = readlnOrNull()
+            if (choiceInput.isNullOrBlank()) {
+                println("No input provided. Exiting...")
+                return
+            }
+            val selectedIndices = parseIndices(choiceInput, totalChapters)
+            if (selectedIndices.isEmpty()) {
+                println("Invalid input or no chapters match. Please try again.")
+                continue
+            }
+
+            println("Selected ${selectedIndices.size} chapter(s) for download.")
+            val chaptersToDownload = selectedIndices.sorted().associate { index ->
+                chapterList[index - 1]
+            }
+
+            runBlocking { downloadChapters(mangaData.title, chaptersToDownload) }
+            break
+        }
     }
 }
 
@@ -157,4 +208,40 @@ fun downloadChapterCBZ(chapterName: String, pageURLs: List<String>, outputFolder
             println("Download failed. Deleted incomplete file: ${cbzFile.absolutePath}")
         }
     }
+}
+
+/**
+ * Parses user input containing comma-separated lists of single indices or hyphenated ranges.
+ * Examples: "1", "1-5", "1, 3, 5-8", "all"
+ */
+fun parseIndices(input: String, maxIndex: Int): Set<Int> {
+    val indices = mutableSetOf<Int>()
+    val parts = input.split(",")
+    for (part in parts) {
+        val trimmed = part.trim()
+        if (trimmed.isEmpty()) continue
+        if (trimmed.equals("all", ignoreCase = true)) {
+            return (1..maxIndex).toSet()
+        }
+        if (trimmed.contains("-")) {
+            val rangeParts = trimmed.split("-")
+            if (rangeParts.size == 2) {
+                val start = rangeParts[0].trim().toIntOrNull()
+                val end = rangeParts[1].trim().toIntOrNull()
+                if (start != null && end != null) {
+                    val rangeStart = minOf(start, end).coerceIn(1, maxIndex)
+                    val rangeEnd = maxOf(start, end).coerceIn(1, maxIndex)
+                    for (i in rangeStart..rangeEnd) {
+                        indices.add(i)
+                    }
+                }
+            }
+        } else {
+            val index = trimmed.toIntOrNull()
+            if (index != null && index in 1..maxIndex) {
+                indices.add(index)
+            }
+        }
+    }
+    return indices
 }
