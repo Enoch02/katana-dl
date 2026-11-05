@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.register
+
 plugins {
     kotlin("jvm") version "2.0.20"
 }
@@ -26,13 +28,14 @@ tasks.jar {
     }
 }
 
-val fatJar = task("fatJar", type = Jar::class) {
+val fatJar = tasks.register("fatJar", Jar::class, fun Jar.() {
+    description = "Builds a jar file with all dependencies"
     manifest.from(tasks.jar.get().manifest)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
     from(tasks.compileKotlin.get().destinationDirectory)
     archiveClassifier.set("all")
-}
+})
 
 tasks.test {
     useJUnitPlatform()
